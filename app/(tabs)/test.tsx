@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { usePlant } from './PlantContext';
+import { usePlant } from '../PlantContext';
 
 export default function HomeScreen() {
   const { addLeaf } = usePlant();

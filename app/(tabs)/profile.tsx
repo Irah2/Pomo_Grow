@@ -1,6 +1,6 @@
 import React from 'react';
 import { DimensionValue, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { usePlant } from './PlantContext';
+import { usePlant } from '../PlantContext';
 
 // 1. Updated Interface: Include color and scale for variation
 interface LeafConfig {
