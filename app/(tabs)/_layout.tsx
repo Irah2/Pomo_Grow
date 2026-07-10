@@ -18,33 +18,11 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-      
         <Tabs.Screen
           name="test"
           options={{
             title: 'Notifications',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="tree"
-          options={{
-            title: 'Tree',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
           }}
         />
         <Tabs.Screen
