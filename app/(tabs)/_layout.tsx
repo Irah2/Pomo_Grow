@@ -3,37 +3,48 @@ import React from 'react';
 import { PlantProvider } from '../PlantContext';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// 1. Import Ionicons from Expo's built-in vector icons
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <PlantProvider>
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarButton: HapticTab,
+          
+          tabBarActiveTintColor: '#F0E673', 
+          tabBarInactiveTintColor: '#A8C78C', 
+          
+          tabBarStyle: {
+            backgroundColor: '#5D8D4A', 
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          }
+        }}>
         <Tabs.Screen
           name="test"
           options={{
-            title: 'Notifications',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
+            title: 'Timer',
+            // 2. Use Ionicons here
+            tabBarIcon: ({ color }) => (
+              <Ionicons size={28} name="timer" color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+            title: 'Plant',
+            // 3. Use Ionicons here (Ionicons uses "leaf" instead of "leaf.fill")
+            tabBarIcon: ({ color }) => (
+              <Ionicons size={28} name="leaf" color={color} />
+            ),
           }}
         />
-     
-    </Tabs>
-     </PlantProvider>
+      </Tabs>
+    </PlantProvider>
   );
 }
