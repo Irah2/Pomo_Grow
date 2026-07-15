@@ -125,7 +125,7 @@ export default function HomeScreen() {
         if (isActive) {
           setMovementStatus("Woah! Put me down!");
           setIsInterrupted(true);
-          resetTimer();
+          resetTimer(); // This turns isActive to false, so the text pops back up!
   
           setTimeout(() => {
             setMovementStatus("Rest peacefully for");
@@ -195,7 +195,7 @@ export default function HomeScreen() {
 
   const getStartButtonText = () => {
     if (isStabilizing) return 'HOLD STILL';
-    if (isActive) return 'PAUSE';
+    if (isActive) return 'STOP';
     return 'START';
   };
 
@@ -230,13 +230,15 @@ export default function HomeScreen() {
           <Text style={styles.headerText}>PomoGrow</Text>
         </View>
 
-        {/* Movement Status Text */}
-        <Text style={[
-          styles.movementStatus, 
-          movementStatus !== "Rest peacefully for" && styles.movementStatusRed
-        ]}>
-          {movementStatus}
-        </Text>
+        {/* Movement Status Text - Now ONLY visible when NOT active! */}
+        {!isActive && (
+          <Text style={[
+            styles.movementStatus, 
+            movementStatus !== "Rest peacefully for" && styles.movementStatusRed
+          ]}>
+            {movementStatus}
+          </Text>
+        )}
 
         {/* Preparation Banner */}
         {!isActive && (

@@ -25,7 +25,7 @@ export default function TabLayout() {
           }
         }}>
         <Tabs.Screen
-          name="test"
+          name="index"
           options={{
             title: 'Timer',
             // 2. Use Ionicons here

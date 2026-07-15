@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LeafConfig, usePlant } from '../PlantContext';
+
+const { width, height } = Dimensions.get('window');
 
 // 1. DEDICATED ANIMATED LEAF COMPONENT
 const AnimatedLeaf = ({ leaf }: { leaf: LeafConfig }) => {
@@ -80,61 +83,128 @@ const AnimatedLeaf = ({ leaf }: { leaf: LeafConfig }) => {
   );
 };
 
+// 2. MAIN PLANT SCREEN COMPONENT
 const Plant = () => {
   const { leaves, addLeaf, clearLeaves } = usePlant();
-  
-  // NEW: State to control if the confirmation modal is showing
   const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  // Background Animation State
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
-  // Helper function to handle the actual reset
+  // Background Drifting Animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 8000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 8000,
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [floatAnim]);
+
+  // Bubble Interpolations (Mapping 0-1 to different X/Y pixel movements)
+  const b1X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
+  const b1Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] });
+  
+  const b2X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -15] });
+  const b2Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -25] });
+  
+  const b3X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
+  const b3Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
+  
+  const b4X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
+  const b4Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
+
   // Helper function to handle the actual reset
   const confirmReset = () => {
-    // 1. Instantly start fading out the modal
     setIsModalVisible(false); 
-
-    // 2. Wait 300 milliseconds for the modal to completely disappear, THEN trigger the explosion
     setTimeout(() => {
       clearLeaves();
     }, 300); 
   };
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.plantContainer}>
-        <Image
-          source={require('../../assets/images/stem.png')}
-          style={styles.stem}
-          resizeMode="contain"
-        />
+    <SafeAreaView style={styles.safeArea}>
+      {/* Decorative Drifting Background Bubbles */}
+      <Animated.View style={[
+        styles.bubble, 
+        { top: -50, left: -50, width: 200, height: 200, transform: [{ translateX: b1X }, { translateY: b1Y }] }
+      ]} />
+      <Animated.View style={[
+        styles.bubble, 
+        { top: 150, right: -40, width: 120, height: 120, transform: [{ translateX: b2X }, { translateY: b2Y }] }
+      ]} />
+      <Animated.View style={[
+        styles.bubble, 
+        { bottom: 100, left: -80, width: 250, height: 250, transform: [{ translateX: b3X }, { translateY: b3Y }] }
+      ]} />
+      <Animated.View style={[
+        styles.bubble, 
+        { bottom: 50, right: 30, width: 80, height: 80, transform: [{ translateX: b4X }, { translateY: b4Y }] }
+      ]} />
 
-        {leaves.map((leaf) => (
-          <AnimatedLeaf key={leaf.id} leaf={leaf} />
-        ))}
+      <View style={styles.mainContainer}>
+        
+        {/* Header Pill */}
+        <View style={styles.headerPill}>
+          <Text style={styles.headerText}>PomoGrow</Text>
+        </View>
+
+        {/* The Plant Area */}
+        <View style={styles.plantWrapper}>
+          <View style={styles.plantContainer}>
+            <Image
+              source={require('../../assets/images/stem.png')}
+              style={styles.stem}
+              resizeMode="contain"
+            />
+
+            {leaves.map((leaf) => (
+              <AnimatedLeaf key={leaf.id} leaf={leaf} />
+            ))}
+          </View>
+
+          <Image
+            source={require('../../assets/images/pot.png')}
+            style={styles.pot}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* The UI Controls Area */}
+        <View style={styles.uiContainer}>
+          
+          {/* Leaf Counter Box (Clickable for testing purposes) */}
+          <TouchableOpacity 
+            style={styles.counterBox} 
+            activeOpacity={0.8} 
+            onPress={addLeaf} // Hidden feature to easily test leaf growth!
+          >
+            <Text style={styles.counterNumber}>{leaves.length}</Text>
+            <Text style={styles.counterText}>Leafs</Text>
+          </TouchableOpacity>
+
+          {/* Styled Yellow Reset Button */}
+          <TouchableOpacity style={styles.resetButton} onPress={() => setIsModalVisible(true)}>
+            <Text style={styles.resetButtonText}>RESET</Text>
+          </TouchableOpacity>
+
+        </View>
       </View>
 
-      <Image
-        source={require('../../assets/images/pot.png')}
-        style={styles.pot}
-        resizeMode="contain"
-      />
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.growButton} onPress={addLeaf}>
-          <Text style={styles.buttonText}>Grow Unique Leaf 🌿</Text>
-        </TouchableOpacity>
-
-        {/* Change the Reset button to open the Modal instead of instantly resetting */}
-        <TouchableOpacity style={styles.resetButton} onPress={() => setIsModalVisible(true)}>
-          <Text style={styles.resetButtonText}>Reset Plant</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* NEW: The Confirmation Modal */}
+      {/* The Confirmation Modal */}
       <Modal
         animationType="fade"
-        transparent={true} // Allows us to see the dark background
+        transparent={true} 
         visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)} // Handles the Android physical back button
+        onRequestClose={() => setIsModalVisible(false)} 
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -142,7 +212,6 @@ const Plant = () => {
             <Text style={styles.modalText}>This will permanently delete all the leaves on your plant.</Text>
             
             <View style={styles.modalButtonContainer}>
-              {/* Cancel Button */}
               <TouchableOpacity 
                 style={[styles.modalButton, styles.cancelButton]} 
                 onPress={() => setIsModalVisible(false)}
@@ -150,7 +219,6 @@ const Plant = () => {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
-              {/* Confirm Button */}
               <TouchableOpacity 
                 style={[styles.modalButton, styles.confirmButton]} 
                 onPress={confirmReset}
@@ -162,22 +230,60 @@ const Plant = () => {
         </View>
       </Modal>
 
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  // ... (Keep all your existing styles here)
-  wrapper: {
-    flex: 1,                  
-    justifyContent: 'flex-end', 
-    alignItems: 'center',     
-    marginBottom: 50,            
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: '#d8f4b5' 
+  },
+  bubble: {
+    position: 'absolute',
+    backgroundColor: '#c4e995',
+    borderRadius: 999,
+    opacity: 0.8,
+  },
+  mainContainer: {
+    flex: 1,
+    gap: 20,
+    alignItems: 'center',
+    justifyContent: 'space-evenly', // This dynamically spaces elements so it fits any screen height
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  headerPill: {
+    backgroundColor: '#5d8e47',
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 40,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    marginTop: -4, 
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  headerText: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  
+  // --- PLANT STYLES ---
+  plantWrapper: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    // Adjusted height to ensure it scales nicely on smaller screens
+    height: height * 0.45, 
   },
   plantContainer: {
     position: 'relative',
     width: 60, 
-    height: 300, 
+    height: '75%', // Takes up top portion of wrapper
     alignItems: 'center',
     zIndex: 1,
   },
@@ -192,42 +298,66 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   pot: {
-    width: 130, 
-    height: 100,
-    marginTop: -30,
+    width: 140, 
+    height: 110,
+    marginTop: -15, // Overlaps perfectly with the stem
     zIndex: 3,
   },
-  buttonContainer: {
-    marginTop: 40,
+
+  // --- UI CONTROLS STYLES ---
+  uiContainer: {
     alignItems: 'center',
-    gap: 12, 
+    gap: 20, 
   },
-  growButton: {
-    backgroundColor: '#388E3C', 
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 30,
+  counterBox: {
+    backgroundColor: '#e6f7c6', 
+    borderWidth: 1,
+    borderColor: '#000000',
+    borderRadius: 25,
+    paddingVertical: 15,
+    paddingHorizontal: 50,
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  counterNumber: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#000000',
+    lineHeight: 46,
+  },
+  counterText: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#000000',
+    lineHeight: 32,
   },
   resetButton: {
-    backgroundColor: 'transparent', 
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: 'bold',
+    backgroundColor: '#fcee74', 
+    paddingVertical: 14,
+    paddingHorizontal: 35,
+    borderRadius: 30,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   resetButtonText: {
-    color: '#D32F2F', 
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#333333',
+    fontSize: 18,
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    letterSpacing: 1,
   },
 
-  // --- NEW MODAL STYLES ---
+  // --- MODAL STYLES ---
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -241,7 +371,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5, // Android shadow
+    elevation: 5, 
   },
   modalTitle: {
     fontSize: 20,
@@ -257,7 +387,7 @@ const styles = StyleSheet.create({
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    gap: 16, // Space between the two buttons
+    gap: 16, 
     width: '100%',
     justifyContent: 'center',
   },
@@ -277,7 +407,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   confirmButton: {
-    backgroundColor: '#D32F2F', // Danger Red
+    backgroundColor: '#4c8635', 
   },
   confirmButtonText: {
     color: 'white',
