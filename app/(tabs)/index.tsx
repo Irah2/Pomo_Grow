@@ -13,9 +13,14 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
+// Updated SVG imports to include Defs, RadialGradient, and Stop
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Button } from 'react-native';
 import { usePlant } from '../PlantContext';
+
+//
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -54,7 +59,7 @@ export default function HomeScreen() {
   const glowOpacity = useRef(new Animated.Value(0.2)).current; // Controls the glowing pulse
   const floatAnim = useRef(new Animated.Value(0)).current; // Controls the background bubbles
 
-  const formatTime = (totalSeconds) => {
+  const formatTime = (totalSeconds:any) => {
     const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
     const paddedMinutes = String(minutes).padStart(2, '0');
@@ -246,7 +251,13 @@ export default function HomeScreen() {
             <Text style={styles.prepTextBold}>{prepSeconds} sec</Text>
           </View>
         )}
-
+        <Button 
+  title="Reset Onboarding (Dev Only)" 
+  onPress={async () => {
+    await AsyncStorage.removeItem('@completed_onboarding');
+    alert('Onboarding reset! Reload the app to test again.');
+  }} 
+/>
         {/* Main Timer Area */}
         <View style={styles.timerWrapper}>
           
@@ -298,6 +309,26 @@ export default function HomeScreen() {
             styles.timerCircle, 
             { transform: [{ scale: timerScale }] }
           ]}>
+            
+            {/* INJECTED RADIAL GRADIENT */}
+            <View style={StyleSheet.absoluteFill}>
+              <Svg height="100%" width="100%">
+                <Defs>
+                  <RadialGradient
+                    id="timerGradient"
+                    cx="50%" cy="50%"
+                    rx="50%" ry="50%"
+                    fx="50%" fy="50%"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <Stop offset="0" stopColor="#7ed957" stopOpacity="1" />
+                    <Stop offset="1" stopColor="#4c8635" stopOpacity="1" />
+                  </RadialGradient>
+                </Defs>
+                <Circle cx={timerSize / 2} cy={timerSize / 2} r={timerSize / 2} fill="url(#timerGradient)" />
+              </Svg>
+            </View>
+
             <Text style={styles.timerText}>
               {formatTime(seconds)}
             </Text>
@@ -305,7 +336,7 @@ export default function HomeScreen() {
 
         </View>
 
-        {/* Button */}
+        {/* Buttons */}
         <View style={styles.buttonStack}>
           <TouchableOpacity
             style={styles.button}
@@ -321,6 +352,17 @@ export default function HomeScreen() {
           >
             <Text style={styles.buttonText}>{getStartButtonText()}</Text>
           </TouchableOpacity>
+
+          {/* Conditionally Rendered Reset Button */}
+          {(isActive || seconds < 1500 || isStabilizing) && (
+            <TouchableOpacity
+              style={[styles.button, styles.resetButton]}
+              activeOpacity={0.7}
+              onPress={resetTimer}
+            >
+              <Text style={[styles.buttonText, styles.resetButtonText]}>RESET</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
       </View>
@@ -432,7 +474,7 @@ const styles = StyleSheet.create({
     width: timerSize, 
     height: timerSize,
     borderRadius: timerSize / 2,
-    backgroundColor: '#4c8635',
+    // REMOVED backgroundColor: '#4c8635', to allow gradient to show
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 15,
@@ -471,6 +513,16 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontStyle: 'italic',
     letterSpacing: 1,
+  },
+  resetButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#2b521b',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  resetButtonText: {
+    color: '#2b521b',
   },
   /* Modals */
   modalOverlay: { 
