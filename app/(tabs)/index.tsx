@@ -1,3 +1,4 @@
+import { IrishGrover_400Regular, useFonts } from '@expo-google-fonts/irish-grover';
 import { Accelerometer } from 'expo-sensors';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -10,56 +11,61 @@ import {
   Text,
   TouchableOpacity,
   UIManager,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Updated SVG imports to include Defs, RadialGradient, and Stop
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button } from 'react-native';
 import { usePlant } from '../PlantContext';
 
-//
-
 // Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  const isNewArchitecture = Boolean((globalThis as any).nativeFabricUIManager);
+  if (!isNewArchitecture) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
 }
 
 const { width } = Dimensions.get('window');
 
-// Calculate Dimensions for the Timer and Glowing Ring
-const timerSize = width * 0.7;
-const scaledTimerSize = timerSize * 1.15; // The size of the timer when it springs up
-const ringStroke = 8; // Thinner core for a sleek edge
-const glowStroke = 22; // The soft optical glow extending outward
-// Sits perfectly on the outer boundary of the timer (no extra gap)
-const ringRadius = (scaledTimerSize / 2) + (ringStroke / 2); 
+// Dimensions matching the UI layout
+const timerSize = width * 0.74;
+const scaledTimerSize = timerSize * 1.12;
+const ringStroke = 8;
+const glowStroke = 22;
+const ringRadius = scaledTimerSize / 2 + ringStroke / 2;
 const ringCircumference = 2 * Math.PI * ringRadius;
-const svgSize = (ringRadius + glowStroke) * 2; // Expanded SVG canvas so the glow doesn't clip
+const svgSize = (ringRadius + glowStroke) * 2;
 
 export default function HomeScreen() {
   const { addLeaf } = usePlant();
 
-  const [movementStatus, setMovementStatus] = useState("Rest peacefully for");
+  // Load Irish Grover Font
+  const [fontsLoaded] = useFonts({
+    IrishGrover_400Regular,
+  });
+
+  const [movementStatus, setMovementStatus] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [IsInterrupted, setIsInterrupted] = useState(false);
-  
+
   // Timer States
   const [seconds, setSeconds] = useState(1500);
   const [isActive, setIsActive] = useState(false);
-  
+
   // 4-Second Start-Up Phase States
   const [isStabilizing, setIsStabilizing] = useState(false);
   const [prepSeconds, setPrepSeconds] = useState(4);
 
   // Animation States
   const timerScale = useRef(new Animated.Value(1)).current;
-  const glowOpacity = useRef(new Animated.Value(0.2)).current; // Controls the glowing pulse
-  const floatAnim = useRef(new Animated.Value(0)).current; // Controls the background bubbles
+  const glowOpacity = useRef(new Animated.Value(0.2)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
-  const formatTime = (totalSeconds:any) => {
+  const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
     const paddedMinutes = String(minutes).padStart(2, '0');
@@ -69,18 +75,18 @@ export default function HomeScreen() {
 
   const resetTimer = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
+
     Animated.spring(timerScale, {
       toValue: 1,
       friction: 6,
       useNativeDriver: true,
     }).start();
 
-    setIsActive(false); 
-    setIsStabilizing(false); 
-    setSeconds(1500);      
+    setIsActive(false);
+    setIsStabilizing(false);
+    setSeconds(1500);
     setPrepSeconds(4);
-    setMovementStatus("Rest peacefully for");
+    setMovementStatus('');
   };
 
   // Background Drifting Animation
@@ -96,30 +102,29 @@ export default function HomeScreen() {
           toValue: 0,
           duration: 8000,
           useNativeDriver: true,
-        })
+        }),
       ])
     ).start();
   }, [floatAnim]);
 
-  // Bubble Interpolations (Mapping 0-1 to different X/Y pixel movements)
+  // Bubble Interpolations
   const b1X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
   const b1Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] });
-  
+
   const b2X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -15] });
   const b2Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -25] });
-  
+
   const b3X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
   const b3Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
-  
+
   const b4X = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
   const b4Y = floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
 
-
-  // Accelerometer Code
+  // Accelerometer Movement Detection
   useEffect(() => {
     Accelerometer.setUpdateInterval(100);
 
-    const subscription = Accelerometer.addListener(accelerometerData => {
+    const subscription = Accelerometer.addListener((accelerometerData) => {
       const { x, y, z } = accelerometerData;
       const totalForce = Math.sqrt(x * x + y * y + z * z);
 
@@ -128,20 +133,12 @@ export default function HomeScreen() {
 
       if (isYanked || isTilted) {
         if (isActive) {
-          setMovementStatus("Woah! Put me down!");
+          setMovementStatus('Woah! Put me down!');
           setIsInterrupted(true);
-          resetTimer(); // This turns isActive to false, so the text pops back up!
-  
-          setTimeout(() => {
-            setMovementStatus("Rest peacefully for");
-          }, 2000);
+          resetTimer();
         } else if (isStabilizing) {
-          setMovementStatus("Keep the device still!");
-          setPrepSeconds(4); 
-          
-          setTimeout(() => {
-            setMovementStatus("Rest peacefully for");
-          }, 2000);
+          setMovementStatus('Keep the device still!');
+          setPrepSeconds(4);
         }
       }
     });
@@ -157,12 +154,11 @@ export default function HomeScreen() {
       const timer = setTimeout(() => setPrepSeconds((prev) => prev - 1), 1000);
       return () => clearTimeout(timer);
     } else if (isStabilizing && prepSeconds === 0) {
-      
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      
+
       Animated.spring(timerScale, {
-        toValue: 1.15,
-        friction: 5, 
+        toValue: 1.12,
+        friction: 5,
         useNativeDriver: true,
       }).start();
 
@@ -179,7 +175,7 @@ export default function HomeScreen() {
     } else if (isActive && seconds === 0) {
       setIsActive(false);
       setIsModalVisible(true);
-      addLeaf(); 
+      addLeaf();
     }
   }, [isActive, seconds]);
 
@@ -189,7 +185,7 @@ export default function HomeScreen() {
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowOpacity, { toValue: 1, duration: 1200, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.2, duration: 1200, useNativeDriver: true })
+          Animated.timing(glowOpacity, { toValue: 0.2, duration: 1200, useNativeDriver: true }),
         ])
       ).start();
     } else {
@@ -198,74 +194,55 @@ export default function HomeScreen() {
     }
   }, [isActive]);
 
-  const getStartButtonText = () => {
-    if (isStabilizing) return 'HOLD STILL';
-    if (isActive) return 'STOP';
-    return 'START';
-  };
-
-  // Calculate how much of the ring should be filled (1 = full, 0 = empty)
   const timeFraction = seconds / 1500;
-  const strokeDashoffset = ringCircumference - (timeFraction * ringCircumference);
+  const strokeDashoffset = ringCircumference - timeFraction * ringCircumference;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       {/* Decorative Drifting Background Bubbles */}
-      <Animated.View style={[
-        styles.bubble, 
-        { top: -50, left: -50, width: 200, height: 200, transform: [{ translateX: b1X }, { translateY: b1Y }] }
-      ]} />
-      <Animated.View style={[
-        styles.bubble, 
-        { top: 150, right: -40, width: 120, height: 120, transform: [{ translateX: b2X }, { translateY: b2Y }] }
-      ]} />
-      <Animated.View style={[
-        styles.bubble, 
-        { bottom: 100, left: -80, width: 250, height: 250, transform: [{ translateX: b3X }, { translateY: b3Y }] }
-      ]} />
-      <Animated.View style={[
-        styles.bubble, 
-        { bottom: 50, right: 30, width: 80, height: 80, transform: [{ translateX: b4X }, { translateY: b4Y }] }
-      ]} />
+      <Animated.View
+        style={[
+          styles.bubble,
+          { top: -40, left: -60, width: 220, height: 220, transform: [{ translateX: b1X }, { translateY: b1Y }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.bubble,
+          { top: 180, right: -50, width: 140, height: 140, transform: [{ translateX: b2X }, { translateY: b2Y }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.bubble,
+          { bottom: 120, left: -90, width: 280, height: 280, transform: [{ translateX: b3X }, { translateY: b3Y }] },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.bubble,
+          { bottom: 60, right: 20, width: 100, height: 100, transform: [{ translateX: b4X }, { translateY: b4Y }] },
+        ]}
+      />
+
+      {/* Full-width Header Pill */}
+      <View style={styles.headerPill}>
+        <Text
+          style={[
+            styles.headerText,
+            fontsLoaded && { fontFamily: 'IrishGrover_400Regular' },
+          ]}
+        >
+          PomoGrow
+        </Text>
+      </View>
 
       <View style={styles.mainContainer}>
-        
-        {/* Header Pill */}
-        <View style={styles.headerPill}>
-          <Text style={styles.headerText}>PomoGrow</Text>
-        </View>
-
-        {/* Movement Status Text - Now ONLY visible when NOT active! */}
-        {!isActive && (
-          <Text style={[
-            styles.movementStatus, 
-            movementStatus !== "Rest peacefully for" && styles.movementStatusRed
-          ]}>
-            {movementStatus}
-          </Text>
-        )}
-
-        {/* Preparation Banner */}
-        {!isActive && (
-          <View style={styles.prepBanner}>
-            <Text style={styles.prepTextBold}>{prepSeconds} sec</Text>
-          </View>
-        )}
-        <Button 
-  title="Reset Onboarding (Dev Only)" 
-  onPress={async () => {
-    await AsyncStorage.removeItem('@completed_onboarding');
-    alert('Onboarding reset! Reload the app to test again.');
-  }} 
-/>
         {/* Main Timer Area */}
         <View style={styles.timerWrapper}>
-          
-          {/* Glowing Progress Ring */}
           {isActive && (
             <Animated.View style={[styles.svgContainer, { opacity: glowOpacity }]}>
               <Svg width={svgSize} height={svgSize}>
-                {/* Track Background */}
                 <Circle
                   cx={svgSize / 2}
                   cy={svgSize / 2}
@@ -274,12 +251,11 @@ export default function HomeScreen() {
                   strokeWidth={ringStroke}
                   fill="transparent"
                 />
-                {/* Layer 1: Soft Optical Glow (Thick & Semi-transparent) */}
                 <Circle
                   cx={svgSize / 2}
                   cy={svgSize / 2}
                   r={ringRadius}
-                  stroke="rgba(251, 191, 36, 0.35)" 
+                  stroke="rgba(251, 191, 36, 0.35)"
                   strokeWidth={glowStroke}
                   fill="transparent"
                   strokeDasharray={ringCircumference}
@@ -287,93 +263,110 @@ export default function HomeScreen() {
                   strokeLinecap="round"
                   transform={`rotate(-90 ${svgSize / 2} ${svgSize / 2})`}
                 />
-                {/* Layer 2: Core Solid Ring (Thinner & Opaque) */}
                 <Circle
                   cx={svgSize / 2}
                   cy={svgSize / 2}
                   r={ringRadius}
-                  stroke="#fbbf24" // Bright solid yellow
+                  stroke="#fbbf24"
                   strokeWidth={ringStroke}
                   fill="transparent"
                   strokeDasharray={ringCircumference}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
-                  transform={`rotate(-90 ${svgSize / 2} ${svgSize / 2})`} 
+                  transform={`rotate(-90 ${svgSize / 2} ${svgSize / 2})`}
                 />
               </Svg>
             </Animated.View>
           )}
 
-          {/* Main Timer Circle */}
-          <Animated.View style={[
-            styles.timerCircle, 
-            { transform: [{ scale: timerScale }] }
-          ]}>
-            
-            {/* INJECTED RADIAL GRADIENT */}
+          {/* Main Timer Circle with Radial Gradient */}
+          <Animated.View style={[styles.timerCircle, { transform: [{ scale: timerScale }] }]}>
             <View style={StyleSheet.absoluteFill}>
               <Svg height="100%" width="100%">
                 <Defs>
                   <RadialGradient
                     id="timerGradient"
-                    cx="50%" cy="50%"
-                    rx="50%" ry="50%"
-                    fx="50%" fy="50%"
+                    cx="50%"
+                    cy="50%"
+                    rx="50%"
+                    ry="50%"
+                    fx="50%"
+                    fy="50%"
                     gradientUnits="userSpaceOnUse"
                   >
-                    <Stop offset="0" stopColor="#7ed957" stopOpacity="1" />
-                    <Stop offset="1" stopColor="#4c8635" stopOpacity="1" />
+                    <Stop offset="0%" stopColor="#72AB40" stopOpacity="1" />
+                    <Stop offset="100%" stopColor="#3E6B24" stopOpacity="1" />
                   </RadialGradient>
                 </Defs>
                 <Circle cx={timerSize / 2} cy={timerSize / 2} r={timerSize / 2} fill="url(#timerGradient)" />
               </Svg>
             </View>
 
-            <Text style={styles.timerText}>
-              {formatTime(seconds)}
-            </Text>
+            <Text style={styles.timerText}>{formatTime(seconds)}</Text>
           </Animated.View>
-
         </View>
 
-        {/* Buttons */}
-        <View style={styles.buttonStack}>
-          <TouchableOpacity
-            style={styles.button}
-            activeOpacity={isStabilizing ? 1 : 0.7} 
-            onPress={() => {
-              if (isStabilizing) return; 
-              if (isActive) {
-                resetTimer();
-              } else {
-                setIsStabilizing(true); 
-              }
-            }}
-          >
-            <Text style={styles.buttonText}>{getStartButtonText()}</Text>
-          </TouchableOpacity>
-
-          {/* Conditionally Rendered Reset Button */}
-          {(isActive || seconds < 1500 || isStabilizing) && (
-            <TouchableOpacity
-              style={[styles.button, styles.resetButton]}
-              activeOpacity={0.7}
-              onPress={resetTimer}
-            >
-              <Text style={[styles.buttonText, styles.resetButtonText]}>RESET</Text>
-            </TouchableOpacity>
+        {/* Reserved instruction slot so layout doesn't jump */}
+        <View style={styles.instructionContainer}>
+          {isStabilizing && (
+            <View style={styles.prepCard}>
+              <Text style={styles.prepTitle}>
+                {movementStatus ? movementStatus : 'Keep the device still for:'}{' '}
+                <Text style={styles.prepHighlight}>{prepSeconds} sec</Text>
+              </Text>
+              <Text style={styles.prepSubtext}>
+                Place your phone face down to begin growing your tree.
+              </Text>
+            </View>
           )}
         </View>
 
+        {/* Action Buttons */}
+        <View style={styles.buttonStack}>
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={isStabilizing ? 1 : 0.8}
+            onPress={() => {
+              if (isStabilizing) return;
+              if (isActive) {
+                resetTimer();
+              } else {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setIsStabilizing(true);
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>{isActive ? 'STOP' : 'START'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.8}
+            onPress={resetTimer}
+          >
+            <Text style={styles.buttonText}>RESET</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Loss Modal */}
-      <Modal animationType="fade" transparent={true} visible={IsInterrupted} onRequestClose={() => setIsInterrupted(false)}>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={IsInterrupted}
+        onRequestClose={() => setIsInterrupted(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Loss</Text>
             <Text style={styles.modalMessage}>You moved! Restart a new session.</Text>
-            <TouchableOpacity style={styles.modalButton} onPress={() => { setIsInterrupted(false); resetTimer(); }}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setIsInterrupted(false);
+                resetTimer();
+              }}
+            >
               <Text style={styles.modalButtonText}>Dismiss</Text>
             </TouchableOpacity>
           </View>
@@ -381,12 +374,23 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Success Modal */}
-      <Modal animationType="fade" transparent={true} visible={isModalVisible} onRequestClose={() => setIsModalVisible(false)}>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>🎉 Time's Up!</Text>
             <Text style={styles.modalMessage}>Great job completing your session.</Text>
-            <TouchableOpacity style={styles.modalButton} onPress={() => { setIsModalVisible(false); resetTimer(); }}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setIsModalVisible(false);
+                resetTimer();
+              }}
+            >
               <Text style={styles.modalButtonText}>Finish</Text>
             </TouchableOpacity>
           </View>
@@ -397,150 +401,162 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: '#d8f4b5' 
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#E4F9A0',
   },
   bubble: {
     position: 'absolute',
-    backgroundColor: '#c4e995',
+    backgroundColor: '#D7F589',
     borderRadius: 999,
-    opacity: 0.8,
+    opacity: 0.6,
+  },
+  headerPill: {
+    backgroundColor: '#528D38',
+    paddingTop: Platform.OS === 'ios' ? 54 : 40,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  headerText: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   mainContainer: {
     flex: 1,
-    gap: 20,
     alignItems: 'center',
-    justifyContent: 'space-evenly', 
+    justifyContent: 'space-between',
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  headerPill: {
-    backgroundColor: '#5d8e47',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    borderRadius: 40,
-    marginTop: -10, 
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  headerText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  movementStatus: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  movementStatusRed: {
-    color: '#ff4444',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  prepBanner: {
-    backgroundColor: '#e6f7c6',
-    borderWidth: 1,
-    borderColor: '#000000',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    width: '50%',
-    alignItems: 'center',
-  },
-  prepTextBold: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#000000',
-    marginVertical: 2,
   },
   timerWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative', 
+    position: 'relative',
+    marginBottom: 12,
+    marginTop: 25,
   },
   svgContainer: {
     position: 'absolute',
     zIndex: 0,
   },
   timerCircle: {
-    width: timerSize, 
+    width: timerSize,
     height: timerSize,
     borderRadius: timerSize / 2,
-    // REMOVED backgroundColor: '#4c8635', to allow gradient to show
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 15,
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    zIndex: 1, 
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    zIndex: 1,
+    overflow: 'hidden',
   },
   timerText: {
-    fontSize: 64, 
-    color: '#ffffff',
-    fontFamily: 'serif', 
+    fontSize: 76,
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontWeight: '300',
+  },
+  instructionContainer: {
+    minHeight: 85,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 6,
+  },
+  prepCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    width: width * 0.88,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C3E88D',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  prepTitle: {
+    fontSize: 15,
+    color: '#1E293B',
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  prepHighlight: {
+    color: '#709E5B',
+    fontWeight: 'bold',
+  },
+  prepSubtext: {
+    fontSize: 12,
+    color: '#8E9A86',
+    textAlign: 'center',
+    marginTop: 4,
   },
   buttonStack: {
     alignItems: 'center',
-    gap: 15, 
+    gap: 12,
     width: '100%',
+    marginBottom: 8,
   },
   button: {
-    backgroundColor: '#2b521b',
+    backgroundColor: '#2D4E1F',
     paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    minWidth: 140,
+    paddingHorizontal: 36,
+    borderRadius: 24,
+    width: 140,
     alignItems: 'center',
-    elevation: 6,
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   buttonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 18,
-    fontFamily: 'serif',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     fontStyle: 'italic',
     letterSpacing: 1,
   },
-  resetButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#2b521b',
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  resetButtonText: {
-    color: '#2b521b',
-  },
   /* Modals */
-  modalOverlay: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0, 0, 0, 0.6)' 
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalCard: {
-    width: '80%', 
-    backgroundColor: 'white', 
-    borderRadius: 25, 
-    padding: 30, 
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 25,
+    padding: 30,
     alignItems: 'center',
     elevation: 8,
   },
-  modalTitle: { fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  modalMessage: { fontSize: 18, color: '#666', textAlign: 'center', marginBottom: 25 },
-  modalButton: { backgroundColor: '#4c8635', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 30, width: '100%', alignItems: 'center' },
-  modalButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+  modalTitle: { fontSize: 26, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  modalMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25 },
+  modalButton: {
+    backgroundColor: '#2D4E1F',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });

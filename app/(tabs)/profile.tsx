@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { IrishGrover_400Regular, useFonts } from '@expo-google-fonts/irish-grover';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, Image, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LeafConfig, usePlant } from '../PlantContext';
 
@@ -88,6 +89,11 @@ const Plant = () => {
   const { leaves, addLeaf, clearLeaves } = usePlant();
   const [isModalVisible, setIsModalVisible] = useState(false);
   
+  // Load Irish Grover Font
+  const [fontsLoaded] = useFonts({
+    IrishGrover_400Regular,
+  });
+
   // Background Animation State
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -131,32 +137,38 @@ const Plant = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       {/* Decorative Drifting Background Bubbles */}
       <Animated.View style={[
         styles.bubble, 
-        { top: -50, left: -50, width: 200, height: 200, transform: [{ translateX: b1X }, { translateY: b1Y }] }
+        { top: -40, left: -60, width: 220, height: 220, transform: [{ translateX: b1X }, { translateY: b1Y }] }
       ]} />
       <Animated.View style={[
         styles.bubble, 
-        { top: 150, right: -40, width: 120, height: 120, transform: [{ translateX: b2X }, { translateY: b2Y }] }
+        { top: 180, right: -50, width: 140, height: 140, transform: [{ translateX: b2X }, { translateY: b2Y }] }
       ]} />
       <Animated.View style={[
         styles.bubble, 
-        { bottom: 100, left: -80, width: 250, height: 250, transform: [{ translateX: b3X }, { translateY: b3Y }] }
+        { bottom: 120, left: -90, width: 280, height: 280, transform: [{ translateX: b3X }, { translateY: b3Y }] }
       ]} />
       <Animated.View style={[
         styles.bubble, 
-        { bottom: 50, right: 30, width: 80, height: 80, transform: [{ translateX: b4X }, { translateY: b4Y }] }
+        { bottom: 60, right: 20, width: 100, height: 100, transform: [{ translateX: b4X }, { translateY: b4Y }] }
       ]} />
+
+      {/* Full-Width Header Pill */}
+      <View style={styles.headerPill}>
+        <Text
+          style={[
+            styles.headerText,
+            fontsLoaded && { fontFamily: 'IrishGrover_400Regular' },
+          ]}
+        >
+          PomoGrow
+        </Text>
+      </View>
 
       <View style={styles.mainContainer}>
-        
-        {/* Header Pill */}
-        <View style={styles.headerPill}>
-          <Text style={styles.headerText}>PomoGrow</Text>
-        </View>
-
         {/* The Plant Area */}
         <View style={styles.plantWrapper}>
           <View style={styles.plantContainer}>
@@ -188,10 +200,10 @@ const Plant = () => {
             onPress={addLeaf} // Hidden feature to easily test leaf growth!
           >
             <Text style={styles.counterNumber}>{leaves.length}</Text>
-            <Text style={styles.counterText}>Leafs</Text>
+            <Text style={styles.counterText}>Leaves</Text>
           </TouchableOpacity>
 
-          {/* Styled Yellow Reset Button */}
+          {/* Styled Green Reset Button */}
           <TouchableOpacity style={styles.resetButton} onPress={() => setIsModalVisible(true)}>
             <Text style={styles.resetButtonText}>RESET</Text>
           </TouchableOpacity>
@@ -237,53 +249,53 @@ const Plant = () => {
 const styles = StyleSheet.create({
   safeArea: { 
     flex: 1, 
-    backgroundColor: '#d8f4b5' 
+    backgroundColor: '#E4F9A0' 
   },
   bubble: {
     position: 'absolute',
-    backgroundColor: '#c4e995',
+    backgroundColor: '#D7F589',
     borderRadius: 999,
-    opacity: 0.8,
+    opacity: 0.6,
+  },
+  headerPill: {
+    backgroundColor: '#528D38',
+    paddingTop: Platform.OS === 'ios' ? 54 : 40,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  headerText: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   mainContainer: {
     flex: 1,
-    gap: 20,
     alignItems: 'center',
-    justifyContent: 'space-evenly', // This dynamically spaces elements so it fits any screen height
+    justifyContent: 'space-between',
+    
+    paddingTop: 50,
+    paddingBottom: 10,
     paddingHorizontal: 20,
-    paddingVertical: 10,
   },
-  headerPill: {
-    backgroundColor: '#5d8e47',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 40,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    marginTop: -4, 
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  headerText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  
+
   // --- PLANT STYLES ---
   plantWrapper: {
     alignItems: 'center',
     justifyContent: 'flex-end',
-    // Adjusted height to ensure it scales nicely on smaller screens
-    height: height * 0.45, 
+    height: height * 0.42, 
   },
   plantContainer: {
     position: 'relative',
     width: 60, 
-    height: '75%', // Takes up top portion of wrapper
+    height: '75%', 
     alignItems: 'center',
     zIndex: 1,
   },
@@ -300,56 +312,61 @@ const styles = StyleSheet.create({
   pot: {
     width: 140, 
     height: 110,
-    marginTop: -15, // Overlaps perfectly with the stem
+    marginTop: -15, 
     zIndex: 3,
   },
 
   // --- UI CONTROLS STYLES ---
   uiContainer: {
     alignItems: 'center',
-    gap: 20, 
+    gap: 16, 
+    marginBottom: 8,
   },
   counterBox: {
-    backgroundColor: '#e6f7c6', 
+    backgroundColor: '#FFFFFF', 
     borderWidth: 1,
-    borderColor: '#000000',
-    borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 50,
+    borderColor: '#C3E88D',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
     alignItems: 'center',
-    elevation: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  counterNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    lineHeight: 40,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  counterText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#709E5B',
+    lineHeight: 24,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  resetButton: {
+    backgroundColor: '#2D4E1F', 
+    paddingVertical: 14,
+    paddingHorizontal: 36,
+    borderRadius: 24,
+    width: 140,
+    alignItems: 'center',
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
-    shadowRadius: 5,
-  },
-  counterNumber: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#000000',
-    lineHeight: 46,
-  },
-  counterText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#000000',
-    lineHeight: 32,
-  },
-  resetButton: {
-    backgroundColor: '#fcee74', 
-    paddingVertical: 14,
-    paddingHorizontal: 35,
-    borderRadius: 30,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   resetButtonText: {
-    color: '#333333',
+    color: '#FFFFFF',
     fontSize: 18,
-    fontFamily: 'serif',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     fontStyle: 'italic',
     letterSpacing: 1,
   },
@@ -357,62 +374,63 @@ const styles = StyleSheet.create({
   // --- MODAL STYLES ---
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', 
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalBox: {
     width: '80%',
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 25,
     padding: 24,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5, 
+    elevation: 8, 
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+    marginBottom: 8,
+    color: '#1E293B',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   modalText: {
-    fontSize: 15,
-    color: '#666',
+    fontSize: 14,
+    color: '#64748B',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    gap: 16, 
+    gap: 12, 
     width: '100%',
     justifyContent: 'center',
   },
   modalButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 25,
+    borderRadius: 20,
     minWidth: 100,
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F1F5F9',
   },
   cancelButtonText: {
-    color: '#333',
+    color: '#475569',
     fontWeight: '600',
-    fontSize: 15,
+    fontSize: 14,
   },
   confirmButton: {
-    backgroundColor: '#4c8635', 
+    backgroundColor: '#2D4E1F', 
   },
   confirmButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
   },
 });
 

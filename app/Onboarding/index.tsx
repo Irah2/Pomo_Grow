@@ -1,44 +1,59 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const SLIDES = [
   {
+    id: '1',
     type: 'intro',
     title: 'GROW YOUR FOCUS',
     subtitle: 'With',
     description:
       'Each session you complete will sprout a new leaf on the plant, small steps that grows into big progress',
-    // Load image directly using require
-    image: require('../../assets/images/page1.png'), 
+    image: require('../../assets/images/page1.png'),
+    // Pre-calculated target heights for each slide
+    cardHeight: 210,
   },
   {
+    id: '2',
     type: 'info',
     title: 'What is Pomodoro?',
     description:
       'The Pomodoro Technique is a time management method where you break work into 25-minute focused intervals (called "pomodoros") separated by 5-minute breaks',
     image: require('../../assets/images/page2.png'),
+    cardHeight: 250,
   },
   {
+    id: '3',
     type: 'final',
     title: 'Let’s Start',
     subtitle: 'Let’s grow our own tree!',
     description: '',
     image: require('../../assets/images/page3.png'),
+    cardHeight: 180,
   },
 ];
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const router = useRouter();
 
   const handleFinish = async () => {
@@ -48,11 +63,29 @@ export default function OnboardingScreen() {
 
   const handleNext = () => {
     if (currentStep < SLIDES.length - 1) {
-      setCurrentStep((prev) => prev + 1);
+      flatListRef.current?.scrollToIndex({
+        index: currentStep + 1,
+        animated: true,
+      });
     } else {
       handleFinish();
     }
   };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / SCREEN_WIDTH);
+    if (index !== currentStep && index >= 0 && index < SLIDES.length) {
+      setCurrentStep(index);
+    }
+  };
+
+  // Interpolate card height continuously based on horizontal drag offset
+  const animatedCardHeight = scrollX.interpolate({
+    inputRange: SLIDES.map((_, i) => i * SCREEN_WIDTH),
+    outputRange: SLIDES.map((slide) => slide.cardHeight),
+    extrapolate: 'clamp',
+  });
 
   const slide = SLIDES[currentStep];
 
@@ -69,25 +102,42 @@ export default function OnboardingScreen() {
         )}
       </View>
 
-      {/* Main Content Area */}
-      <View style={styles.content}>
-        {slide.type === 'intro' && (
-          <View style={styles.centerContent}>
-            <Text style={styles.headerTitle}>{slide.title}</Text>
-            <Text style={styles.headerSubtitle}>{slide.subtitle}</Text>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>PomoGrow</Text>
-            </View>
+      {/* Swipeable Carousel Area */}
+      <FlatList
+        ref={flatListRef}
+        data={SLIDES}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          {
+            useNativeDriver: false,
+            listener: handleScroll,
+          }
+        )}
+        renderItem={({ item }) => (
+          <View style={styles.slideItem}>
+            {item.type === 'intro' && (
+              <View style={styles.centerContent}>
+                <Text style={styles.headerTitle}>{item.title}</Text>
+                <Text style={styles.headerSubtitle}>{item.subtitle}</Text>
+                <View style={styles.pill}>
+                  <Text style={styles.pillText}>PomoGrow</Text>
+                </View>
+              </View>
+            )}
+
+            <Image
+              source={item.image}
+              style={styles.illustrationImage}
+              resizeMode="contain"
+            />
           </View>
         )}
-
-        {/* Dynamic Image Loader */}
-        <Image
-          source={slide.image}
-          style={styles.illustrationImage}
-          resizeMode="contain"
-        />
-      </View>
+      />
 
       {/* Dots Indicator */}
       <View style={styles.dotsContainer}>
@@ -102,8 +152,8 @@ export default function OnboardingScreen() {
         ))}
       </View>
 
-      {/* Bottom Sheet Card */}
-      <View style={styles.bottomCard}>
+      {/* Continuously Animated Bottom Card */}
+      <Animated.View style={[styles.bottomCard, { height: animatedCardHeight }]}>
         <View style={styles.cardTextContainer}>
           {slide.type === 'info' && (
             <Text style={styles.cardTitle}>{slide.title}</Text>
@@ -124,7 +174,7 @@ export default function OnboardingScreen() {
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Ionicons name="arrow-forward" size={32} color="#FFFFFF" />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -135,8 +185,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2B4C1E',
   },
   topBar: {
-    height: 50,
+    height: 60,
     paddingHorizontal: 20,
+    paddingTop: 16,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
@@ -144,7 +195,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(217, 249, 157, 0.4)',
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 20,
   },
   skipText: {
@@ -152,8 +203,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontSize: 14,
   },
-  content: {
-    flex: 1,
+  slideItem: {
+    width: SCREEN_WIDTH,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -211,10 +262,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2FBC2',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 250,
+    overflow: 'hidden',
   },
   cardTextContainer: {
     alignItems: 'center',
@@ -228,13 +281,13 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#333333',
-    marginBottom: 12,
+    color: '#4B5563',
+    marginBottom: 8,
     textAlign: 'center',
   },
   cardDescription: {
     fontSize: 14,
-    color: '#333333',
+    color: '#4B5563',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -245,6 +298,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
   },
 });

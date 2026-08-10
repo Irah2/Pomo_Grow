@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
@@ -30,10 +30,11 @@ export default function Index() {
     );
   }
 
-  // If completed, go to tabs. Otherwise, go to onboarding.
   if (hasCompletedOnboarding) {
     return <Redirect href="/(tabs)" />;
   }
 
+  // Redirect to the onboarding route (omit the parentheses in typed routes)
+  // If your file is app/(onboarding)/index.tsx, href="/onboarding" or href="/" works.
   return <Redirect href="/Onboarding" />;
 }
