@@ -1,4 +1,6 @@
 import { IrishGrover_400Regular, useFonts } from '@expo-google-fonts/irish-grover';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -42,6 +44,7 @@ const svgSize = (ringRadius + glowStroke) * 2;
 
 export default function HomeScreen() {
   const { addLeaf } = usePlant();
+  const router = useRouter();
 
   // Load Irish Grover Font
   const [fontsLoaded] = useFonts({
@@ -87,6 +90,11 @@ export default function HomeScreen() {
     setSeconds(1500);
     setPrepSeconds(4);
     setMovementStatus('');
+  };
+
+  const handleResetOnboarding = async () => {
+    await AsyncStorage.removeItem('@completed_onboarding');
+    router.replace('/Onboarding');
   };
 
   // Background Drifting Animation
@@ -346,6 +354,14 @@ export default function HomeScreen() {
           >
             <Text style={styles.buttonText}>RESET</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.devButton]}
+            activeOpacity={0.8}
+            onPress={handleResetOnboarding}
+          >
+            <Text style={styles.devButtonText}>RESET ONBOARDING</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -509,13 +525,13 @@ const styles = StyleSheet.create({
   },
   buttonStack: {
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     width: '100%',
     marginBottom: 8,
   },
   button: {
     backgroundColor: '#2D4E1F',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 36,
     borderRadius: 24,
     width: 140,
@@ -532,6 +548,17 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
     fontStyle: 'italic',
     letterSpacing: 1,
+  },
+  devButton: {
+    backgroundColor: '#8B263E',
+    width: 180,
+    marginTop: 4,
+  },
+  devButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   /* Modals */
   modalOverlay: {

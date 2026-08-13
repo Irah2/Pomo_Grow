@@ -1,8 +1,15 @@
+import {
+  InriaSerif_400Regular,
+  InriaSerif_400Regular_Italic,
+  InriaSerif_700Bold,
+} from '@expo-google-fonts/inria-serif';
+import { IrishGrover_400Regular, useFonts } from '@expo-google-fonts/irish-grover';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   FlatList,
@@ -27,7 +34,6 @@ const SLIDES = [
     description:
       'Each session you complete will sprout a new leaf on the plant, small steps that grows into big progress',
     image: require('../../assets/images/page1.png'),
-    // Pre-calculated target heights for each slide
     cardHeight: 210,
   },
   {
@@ -41,6 +47,22 @@ const SLIDES = [
   },
   {
     id: '3',
+    type: 'howToUse_important',
+    title: 'Important',
+    description: 'Keep the device still to start timer',
+    image: require('../../assets/images/icon.png'),
+    cardHeight: 180,
+  },
+  {
+    id: '4',
+    type: 'howToUse_dontMove',
+    description:
+      'If you moved the device while a session is going on, it will abort the session and you won’t get your “Leaf” as a reward.',
+    image: require('../../assets/images/icon.png'),
+    cardHeight: 200,
+  },
+  {
+    id: '5',
     type: 'final',
     title: 'Let’s Start',
     subtitle: 'Let’s grow our own tree!',
@@ -51,6 +73,13 @@ const SLIDES = [
 ];
 
 export default function OnboardingScreen() {
+  const [fontsLoaded] = useFonts({
+    IrishGrover_400Regular,
+    InriaSerif_400Regular,
+    InriaSerif_400Regular_Italic,
+    InriaSerif_700Bold,
+  });
+
   const [currentStep, setCurrentStep] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -80,7 +109,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  // Interpolate card height continuously based on horizontal drag offset
   const animatedCardHeight = scrollX.interpolate({
     inputRange: SLIDES.map((_, i) => i * SCREEN_WIDTH),
     outputRange: SLIDES.map((slide) => slide.cardHeight),
@@ -89,11 +117,19 @@ export default function OnboardingScreen() {
 
   const slide = SLIDES[currentStep];
 
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#D9F99D" />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Top Bar / Skip Button */}
       <View style={styles.topBar}>
-        {currentStep > 0 ? (
+        {currentStep > 0 && currentStep < SLIDES.length - 1 ? (
           <TouchableOpacity onPress={handleFinish} style={styles.skipButton}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
@@ -125,8 +161,23 @@ export default function OnboardingScreen() {
                 <Text style={styles.headerTitle}>{item.title}</Text>
                 <Text style={styles.headerSubtitle}>{item.subtitle}</Text>
                 <View style={styles.pill}>
-                  <Text style={styles.pillText}>PomoGrow</Text>
+                  <Text style={styles.pomoGrowText}>PomoGrow</Text>
                 </View>
+              </View>
+            )}
+
+            {(item.type === 'howToUse_important' || item.type === 'howToUse_dontMove') && (
+              <View style={styles.centerContent}>
+                <Text style={[styles.headerTitle, { color: '#D2F3A2' }]}>
+                  {item.type === 'howToUse_important'
+                    ? 'How to use'
+                    : 'Don’t move the device during a session'}
+                </Text>
+                {item.type === 'howToUse_important' && (
+                  <View style={[styles.pill, { backgroundColor: '#6A9A4A' }]}>
+                    <Text style={styles.pomoGrowText}>PomoGrow</Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -166,6 +217,12 @@ export default function OnboardingScreen() {
             </>
           )}
 
+          {slide.type === 'howToUse_important' && (
+            <Text style={[styles.cardTitle, { color: '#C00000' }]}>
+              Important
+            </Text>
+          )}
+
           {!!slide.description && (
             <Text style={styles.cardDescription}>{slide.description}</Text>
           )}
@@ -184,6 +241,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#2B4C1E',
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   topBar: {
     height: 60,
     paddingHorizontal: 20,
@@ -200,7 +261,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     color: '#D9F99D',
-    fontStyle: 'italic',
+    fontFamily: 'InriaSerif_400Regular_Italic',
     fontSize: 14,
   },
   slideItem: {
@@ -213,13 +274,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'InriaSerif_700Bold',
     color: '#D9F99D',
     letterSpacing: 1,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
-    fontStyle: 'italic',
+    fontFamily: 'InriaSerif_400Regular_Italic',
     color: 'rgba(217, 249, 157, 0.8)',
     marginBottom: 12,
   },
@@ -230,10 +292,11 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginBottom: 16,
   },
-  pillText: {
+  /* Specific class for PomoGrow styling */
+  pomoGrowText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 22,
+    fontFamily: 'IrishGrover_400Regular',
+    fontSize: 24,
   },
   illustrationImage: {
     width: 220,
@@ -274,19 +337,21 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'InriaSerif_700Bold',
     color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
   },
   cardSubtitle: {
     fontSize: 14,
+    fontFamily: 'InriaSerif_400Regular',
     color: '#4B5563',
     marginBottom: 8,
     textAlign: 'center',
   },
   cardDescription: {
     fontSize: 14,
+    fontFamily: 'InriaSerif_400Regular',
     color: '#4B5563',
     textAlign: 'center',
     lineHeight: 20,
